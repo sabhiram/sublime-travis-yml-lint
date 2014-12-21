@@ -38,12 +38,42 @@ Fetch sublime version
 version = sublime.version()
 
 
+"""
+Other globals for the plugin
+"""
+TRAVIS_CI_LINT_URL = "http://lint.travis-ci.org/"
+
+
+VALID_TRAVIS_CONFIG_FILES = [".travis.yml"]
+
+
+YML_HEADER = """
+
+    Travis CI Config Validator
+    ==========================
+
+* Validating your .travis.yml file against %s
+""" % (TRAVIS_CI_LINT_URL)
+
+
+YML_LINT_SUCCESS = """* Lint successful, no errors reported!
+
+Looks like all is well here!
+"""
+
+YML_FOOTER = "Press [ESC] to close this panel\n\n\n"
+
+YML_LINT_FAIL = "* The following errors were reported by %s:\n" % TRAVIS_CI_LINT_URL
+
+
+MAX_NUM_RETRIES = 2
+
+
 class TravisLinterApiCall(threading.Thread):
     """
     Defines a thread which wraps a POST call to the travis ci
     linter here: `http://lint.travis-ci.org/`
     """
-
     def __init__(self, yml, view):
         # Constants
         self.url    = "http://lint.travis-ci.org/"
@@ -71,85 +101,6 @@ class TravisLinterApiCall(threading.Thread):
                 self.error = "* Request Error: %s" % e
 
             self.num_retries -= 1
-
-# class OutputToYmlPanelCommand(sublime_plugin.TextCommand):
-#     def run(self, edit, text):
-#         current_window = sublime.active_window()
-#         yml_panel = current_window.get_output_panel("travis-yml-panel")
-#         current_window.run_command("show_panel", {"panel": "output.travis-yml-panel"})
-
-#         print(yml_panel.file_name())
-#         index = yml_panel.size()
-
-#         s = "My index is: %d\n\n" % index
-
-#         print("Old size: %d"%yml_panel.size())
-#         yml_panel.insert(edit, index, s + text + s)
-#         print("New size: %d"%yml_panel.size())
-#         print(s)
-
-
-
-
-
-"""
-Other globals for the plugin
-"""
-TRAVIS_CI_LINT_URL  = "http://lint.travis-ci.org/"
-VALID_TRAVIS_CONFIG_FILES = [".travis.yml"]
-YML_HEADER = """
-
-    Travis CI Config Validator
-    ==========================
-
-* Validating your .travis.yml file against %s
-""" % (TRAVIS_CI_LINT_URL)
-
-YML_LINT_SUCCESS = """* Lint successful, no errors reported!
-
-Looks like all is well here!
-Press [ESC] to close this panel
-
-
-
-"""
-
-MAX_NUM_RETRIES     = 2
-
-
-"""
-Helper functions
-"""
-def Lint(url, yml_text=""):
-    response = requests.post(url, data={"yml": yml_text})
-
-    match = re.match(r".*<ul class=\"result\">(.*)</ul>.*", response.text)
-
-    results = []
-    if match:
-        results_txt = match.group(1)
-
-        match = re.match(r".*?<li>(.*?)</li>(.*)$", results_txt)
-        while match:
-            result_item = match.group(1)
-            rest_of_result = match.group(2)
-            error = re.sub("<[^>]*>", "", result_item)
-            results.append(error)
-            match = re.match(r".*?<li>(.*?)</li>(.*)$", match.group(2))
-
-    return results
-
-def writeLineToViewHelper(view, edit, line, index=0):
-    return view.insert(edit, index, line)
-
-def writeLinesToViewHelper(view, edit, line, index=0):
-    """
-    Helper function to walk a list of lines and emit them to the given view
-    starting at the `index`. Default value of index is 0
-    """
-    for line in lines:
-        index = writeLineToViewHelper(view, edit, line, index)
-    return index
 
 
 """
@@ -183,32 +134,83 @@ class LintTravisYmlCommand(sublime_plugin.TextCommand):
             lint_thread.start()
             self.on_lint_thread_complete(yml_panel, lint_thread)
 
-            # if len(lint_errors) == 0:
-            #     # Lint passed
-            #     index = writeLineToViewHelper(yml_panel, edit, YML_LINT_SUCCESS, index)
-            # else:
-            #     for error in [e + "\n" for e in lint_errors]:
-            #         index = writeLineToViewHelper(yml_panel, edit, error, index)
-            #         print(error, " with index: %d" % (index))
+    def parse_errors_from_response(self, response_txt):
+        errors = {"items": [], "bad_keywords": ["language","global","before_install"]}
+        success_str = None
 
-    def on_lint_thread_complete(self, view, thread, i=0, dir=1):
+        match_lint_fail = re.match(r".*<ul class=\"result\">(.*)</ul>.*", response_txt)
+        match_lint_pass = re.match(r".*<p class=\"result\">(.*)</p>.*", response_txt)
+
+        if match_lint_fail:
+            match_lint_error = re.match(r".*?<li>(.*?)</li>(.*)$", match_lint_fail.group(1))
+            while match_lint_error:
+                current_error_html  = match_lint_error.group(1)
+                rest_of_result      = match_lint_error.group(2)
+
+                error_str = re.sub("<[^>]*>", "", current_error_html)
+                errors["items"].append(error_str)
+                match_lint_error = re.match(r".*?<li>(.*?)</li>(.*)$", rest_of_result)
+
+        elif match_lint_pass:
+            success_str = match_lint_pass.group(1)
+
+        else:
+            errors["items"].append("* Error: Unable to parse POST response to %s" % TRAVIS_CI_LINT_URL)
+
+        return errors, success_str
+
+
+    def apply_errors_to_view_and_panel(self, yml_panel, errors, bad_keywords):
+        num_errors = len(errors)
+        error_header = "* The following %d errors were returned from %s:\n" % (num_errors, TRAVIS_CI_LINT_URL)
+        yml_panel.run_command("append", {"characters": error_header})
+
+        count = 1
+        for error in errors:
+            error = "    %d - %s\n" % (count, error)
+            yml_panel.run_command("append", {"characters": error})
+            count += 1
+        yml_panel.run_command("append", {"characters": "\n\n"})
+
+        error_regions = []
+        for keyword in bad_keywords:
+            error_regions.extend(self.view.find_all(keyword))
+
+        self.view.add_regions(
+            "highlighted_lines",
+            error_regions,
+            "keyword",
+            "dot",
+            sublime.DRAW_OUTLINED)
+
+    def on_lint_thread_complete(self, yml_panel, thread, i=0, dir=1):
         keep_alive = True
 
         if thread.result != None:
-            print("thread complete... inserting text")
-            view.run_command("append", {"characters": thread.result})
+            errors, success_str = self.parse_errors_from_response(thread.result)
+
+            # Looks like stuff went wrong... process them...
+            if errors and not success_str:
+                self.apply_errors_to_view_and_panel(yml_panel, errors["items"], errors["bad_keywords"])
+            elif success_str:
+                yml_panel.run_command("append", {"characters": YML_LINT_SUCCESS})
+            else:
+                yml_panel.run_command("append",
+                    {"characters": " * Error: Something bad " \
+                        "happened when parsing the HTTP Response"})
+
+            yml_panel.run_command("append", {"characters": YML_FOOTER})
             keep_alive = False
 
         if keep_alive:
-            before = i % 8
-            after  = (7) - before
+            before = i % 10
+            after  = (9) - before
             if not after:
                 dir = -1
             if not before:
                 dir = 1
             i += dir
 
-            print("looping since keep alive is set")
-            view.set_status("test", "test [%s=%s]" % (' ' * before, ' ' * after))
-            sublime.set_timeout(lambda: self.on_lint_thread_complete(view, thread, i , dir), 100)
+            yml_panel.set_status("Travis YML Lint", "Linting ... [%s=%s]" % (' ' * before, ' ' * after))
+            sublime.set_timeout(lambda: self.on_lint_thread_complete(yml_panel, thread, i , dir), 100)
 
