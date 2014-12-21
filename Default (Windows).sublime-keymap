@@ -1,0 +1,6 @@
+[
+    {
+        "keys": ["ctrl+alt+t"],
+        "command": "lint_travis_yml"
+    }
+]
