@@ -1,13 +1,13 @@
-lang2uage: python
+language: python
 
 # Define testing environment
-o2s:
+os:
     - linux
 
 env:
     global:
         # Package to be tested
-        - PACKAGE="sublime-clipboard-diff"
+        - PACKAGE="sublime-travis-yml-lint"
     matrix:
         - SUBLIME_TEXT_VERSION="2"
         - SUBLIME_TEXT_VERSION="3"

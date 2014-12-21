@@ -123,6 +123,8 @@ class LintTravisYmlCommand(sublime_plugin.TextCommand):
         # Only try to lint if the file is a valid .travis.yml (or etc) file
         # TODO: These really should be a list of regexs
         if active_file_name in VALID_TRAVIS_CONFIG_FILES:
+            self.view.erase_regions("yml-bad-keywords")
+
             yml_panel = current_window.get_output_panel("travis-yml-panel")
             yml_panel.erase(edit, sublime.Region(0, yml_panel.size()))
             current_window.run_command("show_panel", {"panel": "output.travis-yml-panel"})
@@ -135,7 +137,7 @@ class LintTravisYmlCommand(sublime_plugin.TextCommand):
             self.on_lint_thread_complete(yml_panel, lint_thread)
 
     def parse_errors_from_response(self, response_txt):
-        errors = {"items": [], "bad_keywords": ["language","global","before_install"]}
+        errors = {"items": [], "bad_keywords": []}
         success_str = None
 
         match_lint_fail = re.match(r".*<ul class=\"result\">(.*)</ul>.*", response_txt)
@@ -149,6 +151,11 @@ class LintTravisYmlCommand(sublime_plugin.TextCommand):
 
                 error_str = re.sub("<[^>]*>", "", current_error_html)
                 errors["items"].append(error_str)
+
+                unexpected_key_match = re.match(".*unexpected key\s*(.*),\s*dropping", error_str)
+                if unexpected_key_match:
+                    errors["bad_keywords"].append(unexpected_key_match.group(1))
+
                 match_lint_error = re.match(r".*?<li>(.*?)</li>(.*)$", rest_of_result)
 
         elif match_lint_pass:
@@ -177,7 +184,7 @@ class LintTravisYmlCommand(sublime_plugin.TextCommand):
             error_regions.extend(self.view.find_all(keyword))
 
         self.view.add_regions(
-            "highlighted_lines",
+            "yml-bad-keywords",
             error_regions,
             "keyword",
             "dot",
@@ -192,12 +199,20 @@ class LintTravisYmlCommand(sublime_plugin.TextCommand):
             # Looks like stuff went wrong... process them...
             if errors and not success_str:
                 self.apply_errors_to_view_and_panel(yml_panel, errors["items"], errors["bad_keywords"])
+                self.view.erase_status("yml-lint-status")
+                self.view.set_status("Tavis YML Lint", "Lint failed - %d errors found!" % (len(errors["items"])))
+
             elif success_str:
                 yml_panel.run_command("append", {"characters": YML_LINT_SUCCESS})
+                self.view.erase_status("yml-lint-status")
+                self.view.set_status("Tavis YML Lint", "Lint complete - No errors found!")
+
             else:
                 yml_panel.run_command("append",
                     {"characters": " * Error: Something bad " \
                         "happened when parsing the HTTP Response"})
+                self.view.erase_status("yml-lint-status")
+                self.view.set_status("Tavis YML Lint", "Lint errored - HTTP Error occured, notify my creator!")
 
             yml_panel.run_command("append", {"characters": YML_FOOTER})
             keep_alive = False
@@ -211,6 +226,6 @@ class LintTravisYmlCommand(sublime_plugin.TextCommand):
                 dir = 1
             i += dir
 
-            yml_panel.set_status("Travis YML Lint", "Linting ... [%s=%s]" % (' ' * before, ' ' * after))
+            self.view.set_status("yml-lint-status", "Linting ... [%s=%s]" % (' ' * before, ' ' * after))
             sublime.set_timeout(lambda: self.on_lint_thread_complete(yml_panel, thread, i , dir), 100)
 
