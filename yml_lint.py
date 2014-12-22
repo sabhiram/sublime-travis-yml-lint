@@ -52,6 +52,7 @@ YML_LINT_SUCCESS = "\n".join([
     "",
     "Looks like all is well here!\n"])
 
+
 """
 Defines a thread which wraps a POST call to the travis ci
 linter here: `http://lint.travis-ci.org/`
@@ -59,7 +60,7 @@ linter here: `http://lint.travis-ci.org/`
 class TravisLinterApiCall(threading.Thread):
     def __init__(self, yml):
         # Constants
-        self.url    = TRAVIS_CI_LINT_URL
+        self.url    = "http://lint.travis-ci.org/"
 
         # Input
         self.yml    = yml
@@ -212,7 +213,7 @@ class LintTravisYmlCommand(sublime_plugin.TextCommand):
             success_str = match_lint_pass.group(1)
 
         else:
-            errors["items"].append(" * Error: Unable to parse POST response to %s" % TRAVIS_CI_LINT_URL)
+            errors["items"].append(" * Error: Unable to parse POST response")
 
         return errors, success_str
 
@@ -221,9 +222,7 @@ class LintTravisYmlCommand(sublime_plugin.TextCommand):
         """
         Helper function to apply the errors to the yml panel
         """
-        num_errors = len(errors)
-        error_header = " * The following %d errors were returned:\n" % (num_errors)
-        yml_panel.run_command("append", {"characters": error_header})
+        insertTextToView(yml_panel, " * The following %d errors were returned:\n" % (len(errors)))
 
         count = 1
         for error in errors:

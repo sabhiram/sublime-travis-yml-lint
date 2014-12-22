@@ -1,0 +1,29 @@
+
+
+  ______                     _
+ /_  __/_____ ____ _ _   __ (_)_____
+  / /  / ___// __ `/| | / // // ___/
+ / /  / /   / /_/ / | |/ // /(__  )
+/_/  /_/    \__,_/  |___//_//____/
+
+                 __  __            __   __     _         __
+                 \ \/ /____ ___   / /  / /    (_)____   / /_
+                  \  // __ `__ \ / /  / /    / // __ \ / __/
+                  / // / / / / // /  / /___ / // / / // /_
+                 /_//_/ /_/ /_//_/  /_____//_//_/ /_/ \__/
+
+
+Github - https://github.com/sabhiram/sublime-travis-yml-lint
+
+Thank you for installing the Travis Yml Lint Plugin!
+
+Usage is as follows:
+1. Navigate to a `.travis.yml` file
+2. Press [super +] ctrl + alt + T
+
+The linter will hit the Travis CI web linter and return
+any errors to an output panel.
+
+Version 1.0.0
+✔ Implements basic plugin functionality
+✔ Ready for package control deployment
