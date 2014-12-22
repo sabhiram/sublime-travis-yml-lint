@@ -1,7 +1,6 @@
 [
     {
         "keys": ["ctrl+alt+super+t"],
-        "command": "lint_travis_yml",
-        "context": ".travis.yml"
+        "command": "lint_travis_yml"
     }
 ]

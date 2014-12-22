@@ -19,7 +19,6 @@ import requests
 import threading
 
 
-
 """
 Python 2 vs Python 3 - Compatibility - reduce() is functools.reduce
 """
@@ -103,13 +102,18 @@ class TravisLinterApiCall(threading.Thread):
             self.num_retries -= 1
 
 
+class CloseYmlPanelEventListener(sublime_plugin.EventListener):
+    def on_activated(self, view):
+        file_name = view.file_name()
+        if file_name in VALID_TRAVIS_CONFIG_FILES:
+            view.erase_regions("yml-bad-keywords")
+
+
 """
 Sublime commands that this plugin implements
 """
 class LintTravisYmlCommand(sublime_plugin.TextCommand):
     """
-    Fired when the select-diff key is triggered, will grab
-    the current selection, and open a new tab with a diff
     """
     def run(self, edit):
         """
@@ -126,6 +130,7 @@ class LintTravisYmlCommand(sublime_plugin.TextCommand):
             self.view.erase_regions("yml-bad-keywords")
 
             yml_panel = current_window.get_output_panel("travis-yml-panel")
+            yml_panel.set_name("YML Lint Panel")
             yml_panel.erase(edit, sublime.Region(0, yml_panel.size()))
             current_window.run_command("show_panel", {"panel": "output.travis-yml-panel"})
 
@@ -196,23 +201,25 @@ class LintTravisYmlCommand(sublime_plugin.TextCommand):
         if thread.result != None:
             errors, success_str = self.parse_errors_from_response(thread.result)
 
+            self.view.window().focus_view(yml_panel)
+
             # Looks like stuff went wrong... process them...
             if errors and not success_str:
                 self.apply_errors_to_view_and_panel(yml_panel, errors["items"], errors["bad_keywords"])
                 self.view.erase_status("yml-lint-status")
-                self.view.set_status("Tavis YML Lint", "Lint failed - %d errors found!" % (len(errors["items"])))
+                self.view.set_status("yml-lint-status", "Lint failed - %d errors found!" % (len(errors["items"])))
 
             elif success_str:
                 yml_panel.run_command("append", {"characters": YML_LINT_SUCCESS})
                 self.view.erase_status("yml-lint-status")
-                self.view.set_status("Tavis YML Lint", "Lint complete - No errors found!")
+                self.view.set_status("yml-lint-status", "Lint complete - No errors found!")
 
             else:
                 yml_panel.run_command("append",
                     {"characters": " * Error: Something bad " \
                         "happened when parsing the HTTP Response"})
                 self.view.erase_status("yml-lint-status")
-                self.view.set_status("Tavis YML Lint", "Lint errored - HTTP Error occured, notify my creator!")
+                self.view.set_status("yml-lint-status", "Lint errored - HTTP Error occured, notify my creator!")
 
             yml_panel.run_command("append", {"characters": YML_FOOTER})
             keep_alive = False
