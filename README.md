@@ -2,6 +2,8 @@
 
 A SublimeText plugin to submit the active `.travis.yml` file in view to the Travis CI Lint service exposed from here [http://lint.travis-ci.org/](http://lint.travis-ci.org/)
 
+![](https://raw.githubusercontent.com/sabhiram/public-images/master/sublime-travis-yml-lint/sublime-travis-yml-lint.gif)
+
 ## Usage:
 
 1. Navigate to a `.travis.yml` file in SublimeText
@@ -53,5 +55,5 @@ ln -s sublime-travis-yml-lint ~/Library/Application\ Support/Sublime\ Text\ 3/Pa
 
 #### 1.0.0 - Initial Release
 
-✔ Implements basic plugin functionality
-✔ Ready for package control deployment
+1. Implements basic plugin functionality
+2. Ready for package control deployment
