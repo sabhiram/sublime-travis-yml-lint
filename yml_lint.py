@@ -40,49 +40,32 @@ version = sublime.version()
 """
 Other globals for the plugin
 """
-TRAVIS_CI_LINT_URL = "http://lint.travis-ci.org/"
+YML_HEADER = "\n".join([
+    "",
+    "    Travis CI Config Validator",
+    "    ==========================",
+    "",
+    " * Validating your .travis.yml file against http://lint.travis-ci.org/\n"])
 
+YML_LINT_SUCCESS = "\n".join([
+    " * Lint successful, no errors reported!",
+    "",
+    "Looks like all is well here!\n"])
 
-VALID_TRAVIS_CONFIG_FILES = [".travis.yml"]
-
-
-YML_HEADER = """
-
-    Travis CI Config Validator
-    ==========================
-
-* Validating your .travis.yml file against %s
-""" % (TRAVIS_CI_LINT_URL)
-
-
-YML_LINT_SUCCESS = """* Lint successful, no errors reported!
-
-Looks like all is well here!
 """
-
-YML_FOOTER = "Press [ESC] to close this panel\n\n\n"
-
-YML_LINT_FAIL = "* The following errors were reported by %s:\n" % TRAVIS_CI_LINT_URL
-
-
-MAX_NUM_RETRIES = 2
-
-
+Defines a thread which wraps a POST call to the travis ci
+linter here: `http://lint.travis-ci.org/`
+"""
 class TravisLinterApiCall(threading.Thread):
-    """
-    Defines a thread which wraps a POST call to the travis ci
-    linter here: `http://lint.travis-ci.org/`
-    """
-    def __init__(self, yml, view):
+    def __init__(self, yml):
         # Constants
-        self.url    = "http://lint.travis-ci.org/"
+        self.url    = TRAVIS_CI_LINT_URL
 
         # Input
         self.yml    = yml
-        self.view   = view
 
         # State
-        self.num_retries    = MAX_NUM_RETRIES
+        self.num_retries    = 2
         self.result         = None
         self.error          = None
 
@@ -102,11 +85,15 @@ class TravisLinterApiCall(threading.Thread):
             self.num_retries -= 1
 
 
-class CloseYmlPanelEventListener(sublime_plugin.EventListener):
-    def on_activated(self, view):
-        file_name = view.file_name()
-        if file_name in VALID_TRAVIS_CONFIG_FILES:
-            view.erase_regions("yml-bad-keywords")
+"""
+Helper functions
+"""
+def insertTextToView(view, text):
+    view.run_command("append", {"characters": text})
+
+def updateYmlLintStatus(view, status):
+    view.erase_status("yml-lint-status")
+    view.set_status("yml-lint-status", status)
 
 
 """
@@ -114,9 +101,16 @@ Sublime commands that this plugin implements
 """
 class LintTravisYmlCommand(sublime_plugin.TextCommand):
     """
+    Command to run the travis linter against the currently
+    selected "active" view. It will only allow the lint to
+    occur if the file name matches our whitelist
     """
+
     def run(self, edit):
         """
+        Called when the lint_travis_yml text command is triggered. This
+        command is responsible for grabbing the yml out of the active view,
+        and then submitting it to the travis-ci weblint on a separate thread
         """
         current_window = self.view.window()
 
@@ -124,24 +118,75 @@ class LintTravisYmlCommand(sublime_plugin.TextCommand):
         active_file_path = active_view.file_name()
         active_file_name = os.path.basename(active_file_path)
 
-        # Only try to lint if the file is a valid .travis.yml (or etc) file
         # TODO: These really should be a list of regexs
-        if active_file_name in VALID_TRAVIS_CONFIG_FILES:
-            self.view.erase_regions("yml-bad-keywords")
+        if active_file_name in [".travis.yml"]:
+            # TODO: Enable this once bad-keyword highlight works
+            # self.view.erase_regions("yml-bad-keywords")
 
+            # Fetch all the text we wish to validate
+            yml_text = active_view.substr(sublime.Region(0, active_view.size()))
+
+            # Build a YML output panel
             yml_panel = current_window.get_output_panel("travis-yml-panel")
             yml_panel.set_name("YML Lint Panel")
+            yml_panel.set_read_only(False)
             yml_panel.erase(edit, sublime.Region(0, yml_panel.size()))
             current_window.run_command("show_panel", {"panel": "output.travis-yml-panel"})
 
-            yml_panel.run_command("append", {"characters": YML_HEADER})
+            # Append the header to the output panel
+            insertTextToView(yml_panel, YML_HEADER)
 
-            yml_text = active_view.substr(sublime.Region(0, active_view.size()))
-            lint_thread = TravisLinterApiCall(yml_text, yml_panel)
+            # Start the lint thread
+            lint_thread = TravisLinterApiCall(yml_text)
             lint_thread.start()
-            self.on_lint_thread_complete(yml_panel, lint_thread)
+            self.on_lint_thread_complete(lint_thread, yml_panel)
+
+
+    def on_lint_thread_complete(self, thread, yml_panel, animation_index=0):
+        """
+        Thread handler which watches for the thread to complete and updates
+        the yml panel we created with any info that comes back from the API
+        """
+        keep_alive = True
+
+        if thread.result != None:
+            errors, success_str = self.parse_errors_from_response(thread.result)
+
+            self.view.window().focus_view(yml_panel)
+
+            # Looks like stuff went wrong... process them...
+            if errors and not success_str:
+                self.apply_errors_to_yml_panel(yml_panel, errors["items"], errors["bad_keywords"])
+                updateYmlLintStatus(self.view, "Lint failed - %d errors found!" % (len(errors["items"])))
+
+            elif success_str:
+                insertTextToView(yml_panel, YML_LINT_SUCCESS)
+                updateYmlLintStatus(self.view, "Lint complete - No errors found!")
+
+            else:
+                insertTextToView(yml_panel, " * Error: Something bad happened when parsing the HTTP Response")
+                updateYmlLintStatus(self.view, "Unknown lint error occured, notify my creator!")
+
+            insertTextToView(yml_panel, "Press [ESC] to close this panel\n")
+            yml_panel.set_read_only(True)
+            keep_alive = False
+
+        # If the thread is not done, update the view status and re-check in 100ms
+        if keep_alive:
+            # Make the status dynamic to allow the user to know that we are working
+            animation_frames = "|/-\\"
+            if animation_index >= len(animation_frames):
+                animation_index = 0
+            ch = animation_frames[animation_index]
+
+            updateYmlLintStatus(self.view, " %s Running Tavis CI Lint %s" % (ch,ch))
+            sublime.set_timeout(lambda: self.on_lint_thread_complete(thread, yml_panel, animation_index+1), 100)
+
 
     def parse_errors_from_response(self, response_txt):
+        """
+        Helper funciton which parses the HTTP POST response form the web lint
+        """
         errors = {"items": [], "bad_keywords": []}
         success_str = None
 
@@ -167,72 +212,33 @@ class LintTravisYmlCommand(sublime_plugin.TextCommand):
             success_str = match_lint_pass.group(1)
 
         else:
-            errors["items"].append("* Error: Unable to parse POST response to %s" % TRAVIS_CI_LINT_URL)
+            errors["items"].append(" * Error: Unable to parse POST response to %s" % TRAVIS_CI_LINT_URL)
 
         return errors, success_str
 
 
-    def apply_errors_to_view_and_panel(self, yml_panel, errors, bad_keywords):
+    def apply_errors_to_yml_panel(self, yml_panel, errors, bad_keywords):
+        """
+        Helper function to apply the errors to the yml panel
+        """
         num_errors = len(errors)
-        error_header = "* The following %d errors were returned from %s:\n" % (num_errors, TRAVIS_CI_LINT_URL)
+        error_header = " * The following %d errors were returned:\n" % (num_errors)
         yml_panel.run_command("append", {"characters": error_header})
 
         count = 1
         for error in errors:
-            error = "    %d - %s\n" % (count, error)
-            yml_panel.run_command("append", {"characters": error})
+            insertTextToView(yml_panel, "    %d - %s\n" % (count, error))
             count += 1
-        yml_panel.run_command("append", {"characters": "\n\n"})
+        insertTextToView(yml_panel, "\n")
 
         error_regions = []
         for keyword in bad_keywords:
             error_regions.extend(self.view.find_all(keyword))
 
-        self.view.add_regions(
-            "yml-bad-keywords",
-            error_regions,
-            "keyword",
-            "dot",
-            sublime.DRAW_OUTLINED)
-
-    def on_lint_thread_complete(self, yml_panel, thread, i=0, dir=1):
-        keep_alive = True
-
-        if thread.result != None:
-            errors, success_str = self.parse_errors_from_response(thread.result)
-
-            self.view.window().focus_view(yml_panel)
-
-            # Looks like stuff went wrong... process them...
-            if errors and not success_str:
-                self.apply_errors_to_view_and_panel(yml_panel, errors["items"], errors["bad_keywords"])
-                self.view.erase_status("yml-lint-status")
-                self.view.set_status("yml-lint-status", "Lint failed - %d errors found!" % (len(errors["items"])))
-
-            elif success_str:
-                yml_panel.run_command("append", {"characters": YML_LINT_SUCCESS})
-                self.view.erase_status("yml-lint-status")
-                self.view.set_status("yml-lint-status", "Lint complete - No errors found!")
-
-            else:
-                yml_panel.run_command("append",
-                    {"characters": " * Error: Something bad " \
-                        "happened when parsing the HTTP Response"})
-                self.view.erase_status("yml-lint-status")
-                self.view.set_status("yml-lint-status", "Lint errored - HTTP Error occured, notify my creator!")
-
-            yml_panel.run_command("append", {"characters": YML_FOOTER})
-            keep_alive = False
-
-        if keep_alive:
-            before = i % 10
-            after  = (9) - before
-            if not after:
-                dir = -1
-            if not before:
-                dir = 1
-            i += dir
-
-            self.view.set_status("yml-lint-status", "Linting ... [%s=%s]" % (' ' * before, ' ' * after))
-            sublime.set_timeout(lambda: self.on_lint_thread_complete(yml_panel, thread, i , dir), 100)
-
+        # TODO: Enable this once we are able to clear the bad keywords on `escape`
+        # self.view.add_regions(
+        #     "yml-bad-keywords",
+        #     error_regions,
+        #     "keyword",
+        #     "dot",
+        #     sublime.DRAW_OUTLINED)
