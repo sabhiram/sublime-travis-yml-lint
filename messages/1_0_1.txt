@@ -13,14 +13,9 @@
 
 Github - https://github.com/sabhiram/sublime-travis-yml-lint
 
-Thank you for installing the Travis Yml Lint Plugin!
+Thank you for updating the Travis YML Lint Plugin!
 
-Usage is as follows:
-1. Navigate to a `.travis.yml` file
-2. Press [super +] ctrl + alt + T
-
-The linter will hit the Travis CI web linter and return
-any errors to an output panel.
+Here are some recent changes:
 
 Version 1.0.1
 ✔ Bugfix: Add required modules so Package Control install works
