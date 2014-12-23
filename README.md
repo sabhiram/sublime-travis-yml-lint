@@ -19,7 +19,7 @@ This will grab the yml file and validate it against the web linter. Any errors w
 
 ## Installation
 
-The easiest way to install `Travis YML Lint` is to install it from Package Control [Not supported yet]
+The easiest way to install `Travis YML Lint` is to install it from Package Control
 
 ### Package Control Install
 

@@ -19,7 +19,3 @@ Here are some recent changes:
 
 Version 1.0.1
 ✔ Bugfix: Add required modules so Package Control install works
-
-Version 1.0.0
-✔ Implements basic plugin functionality
-✔ Ready for package control deployment

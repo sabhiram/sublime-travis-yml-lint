@@ -1,0 +1,3 @@
+Version 1.0.0
+✔ Implements basic plugin functionality
+✔ Ready for package control deployment
