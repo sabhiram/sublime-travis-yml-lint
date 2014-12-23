@@ -53,6 +53,9 @@ ln -s sublime-travis-yml-lint ~/Library/Application\ Support/Sublime\ Text\ 3/Pa
 
 ## Versions Released
 
+#### 1.0.1
+1. Bugfix: Add required modules so Package Control install works
+
 #### 1.0.0 - Initial Release
 
 1. Implements basic plugin functionality
