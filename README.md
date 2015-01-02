@@ -46,7 +46,7 @@ Some folks prefer to clone the git repo right into their SublimeText `Packages` 
 
 ```sh
 cd ~/dev
-git clone git@github.com:sabhiram/sublime-clipboard-diff.git sublime-travis-yml-lint
+git clone git@github.com:sabhiram/sublime-travis-yml-lint.git sublime-travis-yml-lint
 ln -s sublime-travis-yml-lint ~/Library/Application\ Support/Sublime\ Text\ 2/Packages/sublime-travis-yml-lint
 ln -s sublime-travis-yml-lint ~/Library/Application\ Support/Sublime\ Text\ 3/Packages/sublime-travis-yml-lint
 ```
