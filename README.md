@@ -4,6 +4,8 @@ A SublimeText plugin to submit the active `.travis.yml` file in view to the Trav
 
 ![](https://raw.githubusercontent.com/sabhiram/public-images/master/sublime-travis-yml-lint/sublime-travis-yml-lint.gif)
 
+[Traivs YML Lint](https://packagecontrol.io/packages/Travis%20YML%20Lint) on Package Control
+
 ## Usage:
 
 1. Navigate to a `.travis.yml` file in SublimeText
