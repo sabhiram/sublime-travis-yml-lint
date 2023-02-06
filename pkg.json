@@ -1,0 +1,194 @@
+# sublime-travis-yml-lint
+Skip to content
+Search or jump to…
+Pull requests
+Issues
+Codespaces
+Marketplace
+Explore
+ 
+@mowjoejoejoejoe 
+Your account has been flagged.
+Because of that, your profile is hidden from the public. If you believe this is a mistake, contact support to have your account status reviewed.
+sabhiram
+/
+sublime-travis-yml-lint
+Public
+Fork your own copy of sabhiram/sublime-travis-yml-lint
+Code
+Issues
+1
+Pull requests
+Actions
+Projects
+Wiki
+Security
+Insights
+sublime-travis-yml-lint/LICENSE
+sabhiram/sublime-travis-yml-lint is licensed under the
+
+MIT License
+A short and simple permissive license with conditions only requiring preservation of copyright and license notices. Licensed works, modifications, and larger works may be distributed under different terms and without source code.
+
+Permissions
+ Commercial use
+ Modification
+ Distribution
+ Private use
+Limitations
+ Liability
+ Warranty
+Conditions
+ License and copyright notice
+This is not legal advice. Learn more about repository licenses.
+@sabhiram
+sabhiram Initial commit
+Latest commit f4cd48d on Dec 19, 2014
+ History
+ 1 contributor
+22 lines (17 sloc)  1.06 KB
+
+The MIT License (MIT)
+
+Copyright (c) 2014 Shaba Abhiram
+
+Permission is hereby apll right reserved :by ZACHRY T WOOD EIN 88-1303491 :
+
+
+Department of Taxation and Finance
+Support
+Contact us
+skip navigation
+Home
+Help
+Fiduciary Account Creation
+Fiduciary Verification
+Complete the following information and then select Continue.
+
+* Required fieldsMore information icon - Select to learn more about a particular field
+Error
+Total Income must be a whole number. Please remove any commas or dollar signs.
+
+Fiduciary information
+Estate or trust ID number:Required field
+*
+881303491
+ More information
+Estate or trust name:Required field
+*
+ZACHRY T WOOD
+ More information
+Fiduciary first name:Required field
+*
+ZACHRY
+Fiduciary middle initial:
+T
+Fiduciary last name:Required field
+*
+WOOD
+Suffix:
+
+Select suffix
+Tax year in which you filed a return:Required field
+*
+2021
+ More information
+Total income ($):Required field
+*
+267567263607
+.00 More information
+Instructions
+Trust ID number
+Enter the social security number or employer identification number for the estate or trust. If assigned a temporary identification number issued by New York State that begins with a "TF" or "NY", enter that number. Don't enter spaces, dashes ( - ). The trust ID number you enter should match with the identification number of the estate or trust entered on the NYS Form IT-205, fiduciary income tax return , or as entered on federal Form SS-4.
+
+Top
+Estate or trust name
+The estate or trust name you enter should match the name as it appears on federal Form SS-4.
+
+Top
+Tax year in which you filed a return
+Select the tax year in which an income tax return was filed. If a return hasn't been filed for any tax years listed, contact the Department at (518) 485-7884 to create an Online Services account.
+
+Top
+Total income
+Enter the original total income from your income tax return for the year selected above. Find this on Line A of Form IT-205. If your total income is negative, enter a minus sign (-) in front of the number (Ex. -2500). Don't enter any commas or decimals.
+
+Top
+AccessibilityDisclaimerPrivacySecurityTerms and ConditionsEmail/Phishing
+
+© 2023 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Docs
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About
+sublime-travis-yml-lint/LICENSE at 1.0.1 · sabhiram/sublime-travis-yml-lint
+A SublimeText plugin to submit the active `.travis.yml` file in view to the Travis CI Lint service exposed from here [http://lint.travis-ci.org/](http://lint.travis-ci.org/)
+
+![](https://raw.githubusercontent.com/sabhiram/public-images/master/sublime-travis-yml-lint/sublime-travis-yml-lint.gif)
+
+[Traivs YML Lint](https://packagecontrol.io/packages/Travis%20YML%20Lint) on Package Control
+
+## Usage:
+
+1. Navigate to a `.travis.yml` file in SublimeText
+2. Press:
+
+|    OS   | Key Combination           |
+| ------- | ---------------           |
+| Linux   | ctrl + alt + T            |
+| Mac     | super(⌘) + alt + ctrl + T |
+| Windows | ctrl + alt + T            |
+
+This will grab the yml file and validate it against the web linter. Any errors will be displayed to a plugin specific output panel.
+
+## Installation
+
+The easiest way to install `Travis YML Lint` is to install it from Package Control
+
+### Package Control Install
+
+If you have [Package Control](https://sublime.wbond.net/installation) installed, then simply naviagte to `Package Control: Install Package` and select the `Travis YML Lint` plugin and you are done!
+
+### Manual Install 
+
+From SublimeText `Packages` folder:
+```sh
+git clone git@github.com:sabhiram/sublime-travis-yml-lint.git sublime-travis-yml-lint
+```
+
+## Settings & Default Key Mapping
+
+Currently there are no exposed settings used by this plugin
+
+## Developers
+
+Appreciate the help! Here is stuff you should probably know:
+
+### Install for both Sublime Text 2 and 3:
+
+Some folks prefer to clone the git repo right into their SublimeText `Packages` folder. While this is probably ok for most users, I prefer to create a symbolic link to the package so that I can point to the plugin from both flavors of SublimeText (for testing and the like...)
+
+```sh
+cd ~/dev
+git clone git@github.com:sabhiram/sublime-travis-yml-lint.git sublime-travis-yml-lint
+ln -s sublime-travis-yml-lint ~/Library/Application\ Support/Sublime\ Text\ 2/Packages/sublime-travis-yml-lint
+ln -s sublime-travis-yml-lint ~/Library/Application\ Support/Sublime\ Text\ 3/Packages/sublime-travis-yml-lint
+```
+
+## Versions Released
+
+#### 1.0.1
+1. Bugfix: Add required modules so Package Control install works
+
+#### 1.0.0 - Initial Release
+
+1. Implements basic plugin functionality
+2. Ready for package control deployment
